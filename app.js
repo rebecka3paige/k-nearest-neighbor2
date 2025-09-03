@@ -12,6 +12,8 @@ const RANDOM_NUM = () => Math.floor(Math.random() * 100) + 1; // 1-100
 
 let points = [];
 let K = parseInt(kSelect.value);
+let lastKNeighbors = [];
+let lastNewPoint = null;
 
 function randomPoint() {
   return {
@@ -24,6 +26,19 @@ function randomPoint() {
 
 function drawPoints() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  // Draw lines to k neighbors if present
+  if (lastNewPoint && lastKNeighbors.length > 0) {
+    ctx.save();
+    ctx.strokeStyle = '#e91e63';
+    ctx.lineWidth = 2;
+    for (const p of lastKNeighbors) {
+      ctx.beginPath();
+      ctx.moveTo(lastNewPoint.x, lastNewPoint.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   for (const p of points) {
     ctx.beginPath();
     ctx.arc(p.x, p.y, POINT_RADIUS, 0, 2 * Math.PI);
@@ -44,12 +59,18 @@ function distance(a, b) {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-function knnValue(newPoint, k) {
-  const sorted = points
+function knnNeighbors(newPoint, k) {
+  return points
     .map(p => ({...p, dist: distance(p, newPoint)}))
     .sort((a, b) => a.dist - b.dist)
     .slice(0, k);
-  const avg = Math.round(sorted.reduce((sum, p) => sum + p.value, 0) / k);
+}
+
+function knnValue(newPoint, k) {
+  const neighbors = knnNeighbors(newPoint, k);
+  const avg = Math.round(neighbors.reduce((sum, p) => sum + p.value, 0) / k);
+  lastKNeighbors = neighbors;
+  lastNewPoint = newPoint;
   return avg;
 }
 
@@ -62,6 +83,8 @@ function addRandomPoints() {
 
 function reset() {
   addRandomPoints();
+  lastKNeighbors = [];
+  lastNewPoint = null;
   drawPoints();
 }
 
